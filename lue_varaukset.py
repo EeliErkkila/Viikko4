@@ -20,26 +20,40 @@ int | str | str | str | date | time | int | float | bool | str | datetime
 ------------------------------------------------------------------------
 """
 from datetime import datetime
+# Tässä tiedostossa määritellään funktioita varaustietojen lukemiseen ja muuntamiseen
+def muunna_varaustiedot(rivi: list) -> list:
 
-def muunna_varaustiedot(varaus: list) -> list:
-    # Tähän tulee siis varaus oletustietotyypeillä (str)
-    # Varauksessa on 11 saraketta -> Lista -> Alkiot 0-10
-    # Muuta tietotyypit haluamallasi tavalla -> Seuraavassa esimerkki ensimmäisestä alkioista
-    muutettu_varaus = []
-    # Ensimmäisen alkion = varaus[0] muunnos
-    muutettu_varaus.append(int(varaus[0]))
-    # Ja tästä jatkuu
-    muutettu_varaus.append("")
-    muutettu_varaus.append("")
-    muutettu_varaus.append("")
-    muutettu_varaus.append("")
-    muutettu_varaus.append("")
-    muutettu_varaus.append("")
-    muutettu_varaus.append("")
-    muutettu_varaus.append("")
-    muutettu_varaus.append("")
-    muutettu_varaus.append("")
-    return muutettu_varaus
+    jono = [item.strip() for item in rivi]
+
+    varaus_id = int(jono[0])
+
+    nimi = jono[1]
+
+    sahkoposti = jono[2]
+
+    puhelin = jono[3]
+
+    varauksen_pvm = datetime.strptime(jono[4], "%Y-%m-%d").date()
+
+    varauksen_klo = datetime.strptime(jono[5], "%H:%M").time()
+
+    varauksen_kesto = int(jono[6])
+
+    hinta = float(jono[7])
+
+    varaus_vahvistettu = (jono[8] == "True")
+
+    varattu_tila = jono[9]
+
+    varaus_luotu = datetime.strptime(jono[10], "%Y-%m-%d %H:%M:%S")
+
+    return [
+        varaus_id, nimi, sahkoposti, puhelin,
+        varauksen_pvm, varauksen_klo,
+        varauksen_kesto, hinta,
+        varaus_vahvistettu, varattu_tila,
+        varaus_luotu
+    ]
 
 def hae_varaukset(varaustiedosto: str) -> list:
     # HUOM! Tälle funktioille ei tarvitse tehdä mitään!
@@ -53,18 +67,57 @@ def hae_varaukset(varaustiedosto: str) -> list:
             varaukset.append(muunna_varaustiedot(varaustiedot))
     return varaukset
 
+# Pääohjelma
 def main():
-    # HUOM! seuraaville riveille ei tarvitse tehdä mitään osassa A!
-    # Osa B vaatii muutoksia -> Esim. tulostuksien (print-funktio) muuttamisen.
-    # Kutsutaan funkioita hae_varaukset, joka palauttaa kaikki varaukset oikeilla tietotyypeillä
-    varaukset = hae_varaukset("varaukset.txt")
-    print(" | ".join(varaukset[0]))
-    print("------------------------------------------------------------------------")
-    for varaus in varaukset[1:]:
-        print(" | ".join(str(x) for x in varaus))
-        tietotyypit = [type(x).__name__ for x in varaus]
-        print(" | ".join(tietotyypit))
-        print("------------------------------------------------------------------------")
+    varausdata = hae_varaukset("varaukset.txt")
+    # Tulostetaan varaukset eri kriteereillä
+    print("1) Vahvistetut varaukset")
+    for merkinta in varausdata[1:]:
+        if merkinta[8] == True:
+            print(f'- {merkinta[1]}, {merkinta[9]}, {merkinta[4].strftime("%d.%m.%Y")}, klo {merkinta[5].strftime("%H.%M")}')
+    print()
+    # Tulostetaan pitkät varaukset
+    print("2) Pitkät varaukset (> 3 h)")
+    for merkinta in varausdata[1:]:
+        if merkinta[6] >= 3:
+            print(
+                f'- {merkinta[1]}, {merkinta[4].strftime("%d.%m.%Y")} klo {merkinta[5].strftime("%H.%M")}'
+                f' kesto {merkinta[6]} h, {merkinta[9]}'
+            )
+    print()
+    # Tulostetaan varauksen vahvistusstatus
+    print("3) Varausten vahvistusstatus")
+    for merkinta in varausdata[1:]:
+        if merkinta[8]:
+            print(f'{merkinta[1]} -> Vahvistettu')
+        else:
+            print(f'{merkinta[1]} -> Ei vahvistettu')
+    print()
+    # Tulostetaan yhteenveto vahvistuksista
+    print("4) Yhteenveto Vahvistuksista")
+    tunnistetut = 0
+    tunnistamattomat = 0
+
+    for merkinta in varausdata[1:]:
+        if merkinta[8]:
+            tunnistetut += 1
+        else:
+            tunnistamattomat += 1
+
+    print(f'- Vahvistettuja varauksia: {tunnistetut} kpl')
+    print(f'- Ei-vahvistettuja varauksia: {tunnistamattomat} kpl')
+    print()
+    # Tulostetaan vahvistettujen varausten kokonaistulot
+    print("5) Vahvistettujen varausten kokonaistulot")
+    summa_rahana = 0
+
+    for merkinta in varausdata[1:]:
+        if merkinta[8]:
+            yksikkohinta = merkinta[7]
+            tunnit = merkinta[6]
+            summa_rahana += yksikkohinta * tunnit
+
+    print(f'Vahvistettujen varausten kokonaistulot: {summa_rahana} €')
 
 if __name__ == "__main__":
     main()
